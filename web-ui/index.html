@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exchange Mail Console</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Exchange Mail Console</span>
+        <h1>Exchange Search and Delete Console</h1>
+        <p>This local web page collects the operation inputs, while the PowerShell backend connects to Exchange, searches target mail, and executes delete actions.</p>
+      </div>
+      <div class="hero-status panel">
+        <div class="status-line">
+          <span class="status-dot" id="statusDot"></span>
+          <strong id="connectionStatus">Disconnected</strong>
+        </div>
+        <p id="sessionSummary">Fill in the connection settings and validate the Exchange session first.</p>
+        <div class="hero-meta">
+          <span>Port 3080</span>
+          <span>Local PowerShell backend</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Exchange Connection</h2>
+          <p>The password is kept only in the current local process memory and is not written back to disk.</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>Connection URI</span>
+            <input id="connectionUri" type="text" placeholder="http://server/PowerShell/">
+          </label>
+          <label>
+            <span>Authentication</span>
+            <select id="authentication">
+              <option value="Kerberos">Kerberos</option>
+              <option value="Negotiate">Negotiate</option>
+              <option value="Basic">Basic</option>
+            </select>
+          </label>
+          <label>
+            <span>Username</span>
+            <input id="username" type="text" placeholder="domain\\exchangeadmin">
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="password" type="password" placeholder="Enter the Exchange admin password">
+          </label>
+        </div>
+        <div class="action-row">
+          <button class="button primary" id="connectButton" type="button">Connect</button>
+          <button class="button muted" id="disconnectButton" type="button">Clear Session</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Search Filters</h2>
+          <p>Delete is guarded: search with the same filters first, review the results, then confirm delete.</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>Start Time</span>
+            <input id="startTime" type="datetime-local" value="2025-07-22T12:22">
+          </label>
+          <label>
+            <span>End Time</span>
+            <input id="endTime" type="datetime-local" value="2025-07-22T12:26">
+          </label>
+          <label>
+            <span>From</span>
+            <input id="fromField" type="text" value="it@example.com">
+          </label>
+          <label>
+            <span>Subject</span>
+            <input id="subjectField" type="text" placeholder="Optional subject text">
+          </label>
+          <label class="full-width">
+            <span>Keyword</span>
+            <input id="keywordField" type="text" placeholder="Optional body keyword">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Targets</h2>
+          <p>The search action copies matched mail to the target mailbox and folder for review before delete.</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>Target Mailbox</span>
+            <input id="targetMailbox" type="text" placeholder="Mailbox used for review copies">
+          </label>
+          <label>
+            <span>Target Folder</span>
+            <input id="targetFolder" type="text" value="Deleted Items">
+          </label>
+          <label class="full-width">
+            <span>Target Accounts</span>
+            <textarea id="usersField" placeholder="One account per line"></textarea>
+          </label>
+        </div>
+        <div class="action-row wrap">
+          <button class="button secondary" id="loadUsersButton" type="button">Load leaverlist.ps1</button>
+          <button class="button secondary" id="saveUsersButton" type="button">Save leaverlist.ps1</button>
+          <button class="button muted" id="cleanUsersButton" type="button">Trim Mail Suffix</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Execution</h2>
+          <p>The query preview is rendered in UTC, matching the backend conversion logic.</p>
+        </div>
+        <div class="preview-box">
+          <small>Search Query</small>
+          <code id="queryPreview"></code>
+        </div>
+        <div class="preview-box dark">
+          <small>Command Preview</small>
+          <code id="commandPreview"></code>
+        </div>
+        <label class="checkline">
+          <input id="reviewConfirmed" type="checkbox">
+          <span>I have reviewed the copied search results and allow delete with the same filters.</span>
+        </label>
+        <div class="action-row wrap">
+          <button class="button primary" id="searchButton" type="button">Search and Copy</button>
+          <button class="button danger" id="deleteButton" type="button">Delete Matching Mail</button>
+        </div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-head">
+          <h2>Results</h2>
+          <p id="resultSummary">No action has been executed yet.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Match Count</th>
+                <th>Action</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="resultTable">
+              <tr>
+                <td colspan="5" class="empty-cell">Per-account results appear here after search or delete.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Operation Log</h2>
+          <p>This area shows the local operation timeline.</p>
+        </div>
+        <div class="log-list" id="logList">
+          <div class="log-item">Waiting for the next action.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
